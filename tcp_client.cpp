@@ -1,6 +1,6 @@
 /*
     Author: huyluongme
-    TCP Client
+    TCP Multi-client - Client
 */
 
 #include <stdio.h>
