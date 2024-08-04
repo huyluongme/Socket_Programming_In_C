@@ -1,58 +1,53 @@
-/*
-    Author: huyluongme
-    TCP Multi-client - Client
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstring>
+#include <iostream>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
 
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
 int main() {
-    int client_fd;
-    const char* hello = "Hello from client";
-    char buffer[1024] = {0};
+    int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    char buffer[BUFFER_SIZE] = {0};
 
-    if((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printf("Socket creation error");
+    // Create socket
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        std::cout << "Socket creation error" << std::endl;
         return -1;
     }
 
-    printf("Client socket is created successful\n");
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
 
-    sockaddr_in server_addr;
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(8080);
-
-    if(connect(client_fd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        printf("Connection failed");
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        std::cout << "Invalid address / Address not supported" << std::endl;
         return -1;
-    } 
-
-    printf("Connect to Server successful\n");
-
-    send(client_fd, hello, strlen(hello), 0);
-
-    read(client_fd, buffer, 1024 - 1);
-
-    printf("%s\n", buffer);
-
-    while (true)
-    {
-        char mess[100];
-        scanf("%[^\n]%*c", mess);
-        send(client_fd, mess, strlen(mess), 0);
-        int valread = read(client_fd, mess, 100);
-        mess[valread] = '\0';
-        if(strcmp(mess, "bye") == 0) break;
-        printf("%s\n", mess);
     }
-    
 
-    close(client_fd);
+    // Connect to server
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        std::cout << "Connection failed" << std::endl;
+        return -1;
+    }
+
+    while (true) {
+        std::cout << "Client: ";
+        std::string message;
+        std::getline(std::cin, message);
+
+        send(sock, message.c_str(), message.length(), 0);
+        std::cout << "Message sent" << std::endl;
+
+        valread = read(sock, buffer, BUFFER_SIZE);
+        buffer[valread] = '\0';
+        std::cout << "Server: " << buffer << std::endl;
+    }
+
+    close(sock);
     return 0;
 }
